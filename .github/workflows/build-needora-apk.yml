@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "needora-web.zip"
+      - "needora-web-v2.zip"
       - ".github/workflows/build-needora-apk.yml"
 
 jobs:
@@ -28,17 +28,17 @@ jobs:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Verify app package
-        run: |
-          test -f needora-web.zip
-          unzip -l needora-web.zip | head -40
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Create Capacitor project files
         run: |
           cat > package.json <<'EOF'
           {
             "name": "needora-mobile",
-            "version": "1.0.0",
+            "version": "2.0.0",
             "private": true,
             "dependencies": {
               "@capacitor/android": "6.2.1",
@@ -58,27 +58,18 @@ jobs:
           }
           EOF
 
-      - name: Install Capacitor
-        run: npm install --no-audit --no-fund
+      - name: Install dependencies
+        run: |
+          npm install --no-audit --no-fund
+          pip install pillow
 
       - name: Prepare NEEDORA web app
         run: |
           rm -rf www
           mkdir -p www
-          unzip -q needora-web.zip -d www
-
-          # If the ZIP contains a single top-level folder, flatten it automatically.
-          if [ ! -f www/index.html ]; then
-            TOPDIR="$(find www -mindepth 1 -maxdepth 1 -type d | head -1)"
-            if [ -n "$TOPDIR" ] && [ -f "$TOPDIR/index.html" ]; then
-              cp -a "$TOPDIR"/. www/
-              rm -rf "$TOPDIR"
-            fi
-          fi
-
-          echo "Files in www:"
-          find www -maxdepth 2 -type f | sort | head -80
+          unzip -q needora-web-v2.zip -d www
           test -f www/index.html
+          test -f www/assets/icon-512.png
 
       - name: Create Android project
         run: npx cap add android
@@ -86,7 +77,30 @@ jobs:
       - name: Sync NEEDORA to Android
         run: npx cap sync android
 
-      - name: Build debug APK
+      - name: Generate Android launcher icon
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          img = Image.open('www/assets/icon-512.png').convert('RGBA')
+          sizes = {
+              'mipmap-mdpi': 48,
+              'mipmap-hdpi': 72,
+              'mipmap-xhdpi': 96,
+              'mipmap-xxhdpi': 144,
+              'mipmap-xxxhdpi': 192,
+          }
+          res = Path('android/app/src/main/res')
+          for folder, size in sizes.items():
+              d = res/folder
+              d.mkdir(parents=True, exist_ok=True)
+              out = img.resize((size,size), Image.LANCZOS)
+              out.save(d/'ic_launcher.png')
+              out.save(d/'ic_launcher_round.png')
+          print('Launcher icons generated from NEEDORA icon')
+          PY
+
+      - name: Build APK
         working-directory: android
         run: |
           chmod +x gradlew
