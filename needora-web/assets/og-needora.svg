@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#EAF6F2"/></linearGradient></defs>
+  <rect width="1200" height="630" rx="40" fill="url(#bg)"/>
+  <circle cx="1005" cy="115" r="180" fill="#DDF3EC"/>
+  <rect x="90" y="82" width="86" height="86" rx="24" fill="#102A43"/>
+  <path d="M112 146V111C112 106 118 104 121 108L145 138C148 142 154 140 154 135V106" fill="none" stroke="#9ED7C9" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="133" cy="125" r="7" fill="#1F8A7A" stroke="#fff" stroke-width="3"/>
+  <text x="202" y="140" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="800" letter-spacing="6" fill="#102A43">NEEDORA</text>
+  <text x="90" y="315" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800" fill="#102A43">Cosa ti serve?</text>
+  <text x="94" y="376" font-family="Arial, Helvetica, sans-serif" font-size="31" fill="#526D7D">Trova, confronta e prenota servizi sanitari.</text>
+  <rect x="91" y="440" width="620" height="76" rx="26" fill="#fff" stroke="#D7E7E3" stroke-width="2"/>
+  <circle cx="133" cy="478" r="8" fill="#1F8A7A"/>
+  <text x="160" y="489" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="700" fill="#102A43">Colonoscopia · Milano</text>
+  <rect x="750" y="191" width="356" height="278" rx="32" fill="#fff" stroke="#D7E7E3" stroke-width="2"/>
+  <text x="790" y="245" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#718793">PIÙ VICINO</text>
+  <text x="790" y="295" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="800" fill="#102A43">GastroCare Milano</text>
+  <text x="790" y="337" font-family="Arial, Helvetica, sans-serif" font-size="19" fill="#607781">4,9 · 900 m</text>
+  <text x="790" y="395" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="800" fill="#0F746C">Gio 08:30 · da €90</text>
+</svg>

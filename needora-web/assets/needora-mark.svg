@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NEEDORA">
+  <rect width="64" height="64" rx="18" fill="#102A43"/>
+  <path d="M16 46V22C16 17.8 20.8 16.2 23.5 19.4L40.7 42.2C43.5 45.8 48 44.2 48 39.8V18" fill="none" stroke="#9ED7C9" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="5.4" fill="#1F8A7A" stroke="#FFFFFF" stroke-width="2.2"/>
+</svg>
