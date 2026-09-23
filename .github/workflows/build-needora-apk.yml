@@ -1,0 +1,106 @@
+name: Build NEEDORA Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "needora-web.zip"
+      - ".github/workflows/build-needora-apk.yml"
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Verify app package
+        run: |
+          test -f needora-web.zip
+          unzip -l needora-web.zip | head -40
+
+      - name: Create Capacitor project files
+        run: |
+          cat > package.json <<'EOF'
+          {
+            "name": "needora-mobile",
+            "version": "1.0.0",
+            "private": true,
+            "dependencies": {
+              "@capacitor/android": "6.2.1",
+              "@capacitor/core": "6.2.1"
+            },
+            "devDependencies": {
+              "@capacitor/cli": "6.2.1"
+            }
+          }
+          EOF
+
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.needora.app",
+            "appName": "NEEDORA",
+            "webDir": "www"
+          }
+          EOF
+
+      - name: Install Capacitor
+        run: npm install --no-audit --no-fund
+
+      - name: Prepare NEEDORA web app
+        run: |
+          rm -rf www
+          mkdir -p www
+          unzip -q needora-web.zip -d www
+
+          # If the ZIP contains a single top-level folder, flatten it automatically.
+          if [ ! -f www/index.html ]; then
+            TOPDIR="$(find www -mindepth 1 -maxdepth 1 -type d | head -1)"
+            if [ -n "$TOPDIR" ] && [ -f "$TOPDIR/index.html" ]; then
+              cp -a "$TOPDIR"/. www/
+              rm -rf "$TOPDIR"
+            fi
+          fi
+
+          echo "Files in www:"
+          find www -maxdepth 2 -type f | sort | head -80
+          test -f www/index.html
+
+      - name: Create Android project
+        run: npx cap add android
+
+      - name: Sync NEEDORA to Android
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk NEEDORA-debug.apk
+          test -f NEEDORA-debug.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEEDORA-Android-APK
+          path: NEEDORA-debug.apk
+          if-no-files-found: error
+          retention-days: 14
