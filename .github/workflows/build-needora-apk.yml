@@ -35,10 +35,10 @@ jobs:
 
       - name: Create Capacitor project files
         run: |
-          cat > package.json <<'EOF'
+          cat > package.json <<'JSON'
           {
             "name": "needora-mobile",
-            "version": "2.0.0",
+            "version": "3.0.0",
             "private": true,
             "dependencies": {
               "@capacitor/android": "6.2.1",
@@ -48,20 +48,20 @@ jobs:
               "@capacitor/cli": "6.2.1"
             }
           }
-          EOF
+          JSON
 
-          cat > capacitor.config.json <<'EOF'
+          cat > capacitor.config.json <<'JSON'
           {
             "appId": "com.needora.app",
             "appName": "NEEDORA",
             "webDir": "www"
           }
-          EOF
+          JSON
 
       - name: Install dependencies
         run: |
           npm install --no-audit --no-fund
-          pip install pillow
+          pip install pillow numpy
 
       - name: Prepare NEEDORA web app
         run: |
@@ -77,12 +77,29 @@ jobs:
       - name: Sync NEEDORA to Android
         run: npx cap sync android
 
-      - name: Generate Android launcher icon
+      - name: Replace all Android launcher icons
         run: |
           python - <<'PY'
           from PIL import Image
           from pathlib import Path
-          img = Image.open('www/assets/icon-512.png').convert('RGBA')
+          import numpy as np
+
+          src = Image.open('www/assets/icon-512.png').convert('RGBA')
+          arr = np.array(src.convert('RGB'))
+          mask = np.min(arr, axis=2) < 235
+          ys, xs = np.where(mask)
+          if len(xs):
+              l, t, r, b = xs.min(), ys.min(), xs.max()+1, ys.max()+1
+              w, h = r-l, b-t
+              side = max(w, h)
+              cx, cy = (l+r)//2, (t+b)//2
+              l = max(0, cx-side//2)
+              t = max(0, cy-side//2)
+              r = min(src.width, l+side)
+              b = min(src.height, t+side)
+              src = src.crop((l,t,r,b))
+
+          res = Path('android/app/src/main/res')
           sizes = {
               'mipmap-mdpi': 48,
               'mipmap-hdpi': 72,
@@ -90,14 +107,46 @@ jobs:
               'mipmap-xxhdpi': 144,
               'mipmap-xxxhdpi': 192,
           }
-          res = Path('android/app/src/main/res')
           for folder, size in sizes.items():
-              d = res/folder
+              d = res / folder
               d.mkdir(parents=True, exist_ok=True)
-              out = img.resize((size,size), Image.LANCZOS)
-              out.save(d/'ic_launcher.png')
-              out.save(d/'ic_launcher_round.png')
-          print('Launcher icons generated from NEEDORA icon')
+              icon = src.resize((size, size), Image.LANCZOS)
+              icon.save(d / 'ic_launcher.png')
+              icon.save(d / 'ic_launcher_round.png')
+
+          dd = res / 'drawable-nodpi'
+          dd.mkdir(parents=True, exist_ok=True)
+          src.resize((512,512), Image.LANCZOS).save(dd / 'needora_launcher.png')
+
+          values = res / 'values'
+          values.mkdir(parents=True, exist_ok=True)
+          (values / 'needora_icon_colors.xml').write_text(
+              '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n  <color name="needora_icon_background">#102A43</color>\n</resources>\n',
+              encoding='utf-8'
+          )
+
+          anydpi = res / 'mipmap-anydpi-v26'
+          anydpi.mkdir(parents=True, exist_ok=True)
+          xml = '''<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/needora_icon_background" />
+    <foreground android:drawable="@drawable/needora_launcher" />
+</adaptive-icon>
+'''
+          (anydpi / 'ic_launcher.xml').write_text(xml, encoding='utf-8')
+          (anydpi / 'ic_launcher_round.xml').write_text(xml, encoding='utf-8')
+          print('NEEDORA legacy and adaptive launcher icons replaced')
+          PY
+
+      - name: Force app version update
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('android/app/build.gradle')
+          s = p.read_text()
+          s = s.replace('versionCode 1', 'versionCode 3')
+          s = s.replace('versionName "1.0"', 'versionName "3.0"')
+          p.write_text(s)
           PY
 
       - name: Build APK
@@ -108,13 +157,14 @@ jobs:
 
       - name: Rename APK
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk NEEDORA-debug.apk
-          test -f NEEDORA-debug.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk NEEDORA-V3.apk
+          test -f NEEDORA-V3.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: NEEDORA-Android-APK
-          path: NEEDORA-debug.apk
+          name: NEEDORA-Android-APK-V3
+          path: NEEDORA-V3.apk
           if-no-files-found: error
           retention-days: 14
+          
